@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dashka</title>
+    <style>
+        * {
+            user-select: none;
+        }
+        body {
+            background-color: #FADADD;
+            color: #5B1A2B;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        .card {
+            background-color: #FFC0CB;
+            border-radius: 10px;
+            box-shadow: 0px 0px 50px 0px rgba(80, 80, 80, 0.8);
+            margin: 16px;
+            padding: 16px;
+        }
+        .time-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            grid-column-gap: 0px;
+            grid-row-gap: 0px;
+            place-items: center;
+        }
+        canvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        .love-button {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+
+            width: 120px;
+            height: 120px;
+
+            border: none;
+            border-radius: 50%;
+
+            background-color: #ff6b81;
+            color: white;
+
+            font-size: 16px;
+            font-weight: bold;
+
+            cursor: pointer;
+
+            box-shadow: 0 5px 20px rgba(91, 26, 43, 0.4);
+
+            transition: transform 0.2s, box-shadow 0.2s;
+
+            z-index: 10;
+        }
+
+        .love-button:hover {
+            transform: translateX(-50%) scale(1.08);
+            box-shadow: 0 8px 25px rgba(91, 26, 43, 0.5);
+        }
+
+        .love-button:active {
+            transform: translateX(-50%) scale(0.95);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div id="time" class="card time-container">
+        <div id="time-d"></div>
+        <div id="time-h"></div>
+        <div id="time-m"></div>
+        <div id="time-s"></div>
+
+        <div id="time-d-local"></div>
+        <div id="time-h-local"></div>
+        <div id="time-m-local"></div>
+        <div id="time-s-local"></div>
+    </div>
+
+    <button class="love-button" id="loveButton">
+        Нажми
+    </button>
+
+    <script>
+        const pluralRules = new Intl.PluralRules('ru-RU');
+
+        function pluralize(number, forms) {
+            const rule = pluralRules.select(number);
+
+            return forms[rule];
+        }
+
+        function updateTime() {
+            const targetDate = new Date('2026-11-28T00:00:00');
+
+            const now = new Date();
+            const difference = targetDate - now;
+
+            const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
+            const minutes = Math.floor((difference / (1000 * 60)) % 60);
+            const seconds = Math.floor((difference / 1000) % 60);
+
+            document.getElementById("time-d").innerText = days.toString()
+            document.getElementById("time-h").innerText = hours.toString()
+            document.getElementById("time-m").innerText = minutes.toString()
+            document.getElementById("time-s").innerText = seconds.toString()
+
+            document.getElementById("time-d-local").innerText = pluralize(days, {
+                one: "День",
+                few: "Два",
+                many: "Дней"
+            })
+            document.getElementById("time-h-local").innerText = pluralize(hours, {
+                one: "Час",
+                few: "Часа",
+                many: "Часов"
+            })
+            document.getElementById("time-m-local").innerText = pluralize(minutes, {
+                one: "Минута",
+                few: "Минуты",
+                many: "Минут"
+            })
+            document.getElementById("time-s-local").innerText = pluralize(seconds, {
+                one: "Секунда",
+                few: "Секунды",
+                many: "Секунд"
+            })
+        }
+
+        setInterval(() => {
+            updateTime()
+        }, 1000);
+
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+
+        let width;
+        let height;
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener("resize", resize);
+        resize();
+
+
+        // =========================
+        // НАСТРОЙКИ
+        // =========================
+
+        const HEART_COUNT = 50;
+
+        const hearts = [];
+
+
+        // =========================
+        // СОЗДАНИЕ СЕРДЕЧКА
+        // =========================
+
+        function createHeart() {
+            return {
+                x: Math.random() * width,
+                y: Math.random() * height,
+
+                size: 15 + Math.random() * 25,
+
+                speedX: -0.3 + Math.random() * 0.6,
+                speedY: -0.3 + Math.random() * 0.6,
+
+                rotation: Math.random() * Math.PI * 2,
+                rotationSpeed: -0.02 + Math.random() * 0.02,
+
+                opacity: 0.3 + Math.random() * 0.7
+            };
+        }
+
+
+        // =========================
+        // СОЗДАЁМ СЕРДЕЧКИ
+        // =========================
+
+        for (let i = 0; i < HEART_COUNT; i++) {
+            hearts.push(createHeart());
+        }
+
+
+        // =========================
+        // РИСОВАНИЕ
+        // =========================
+
+        function drawHeart(heart) {
+            ctx.save();
+
+            ctx.translate(heart.x, heart.y);
+            ctx.rotate(heart.rotation);
+
+            ctx.globalAlpha = heart.opacity;
+
+            ctx.font = `${heart.size}px Arial`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            ctx.fillText("❤️", 0, 0);
+
+            ctx.restore();
+        }
+
+
+        // =========================
+        // АНИМАЦИЯ
+        // =========================
+
+        function animate() {
+
+            ctx.clearRect(0, 0, width, height);
+
+            for (const heart of hearts) {
+
+                // движение
+                heart.x += heart.speedX;
+                heart.y += heart.speedY;
+
+                // вращение
+                heart.rotation += heart.rotationSpeed;
+
+                // если вышло за экран —
+                // появляется с другой стороны
+                if (heart.x < -heart.size) {
+                    heart.x = width + heart.size;
+                }
+
+                if (heart.x > width + heart.size) {
+                    heart.x = -heart.size;
+                }
+
+                if (heart.y < -heart.size) {
+                    heart.y = height + heart.size;
+                }
+
+                if (heart.y > height + heart.size) {
+                    heart.y = -heart.size;
+                }
+
+                drawHeart(heart);
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        const words = [
+            "Счастье ✨",
+            "Ты прекрасна",
+            "Моя ❤️",
+            "Солнышко ☀️",
+            "Любимая 💕",
+            "Ты лучшая",
+            "Скучаю 🥺",
+            "Обнимаю 🤗",
+            "Моя радость",
+            "Ты чудо ✨",
+            "Самая красивая 😍",
+            "Люблю тебя ❤️",
+            "Моё счастье",
+            "Моя нежность 🌷",
+            "Ты моё солнце ☀️",
+            "Милая 🥰",
+            "Моё сокровище 💎",
+            "Хочу обнять тебя",
+            "Ты прекраснее всех 🌹",
+            "Ты мне нужна 💕",
+            "Думаю о тебе 💭",
+            "Ты делаешь меня счастливым",
+            "Моя единственная 💖",
+            "Люблю твою улыбку 😊",
+            "Ты самая милая",
+            "Хочу к тебе 🥺",
+            "Ты в моём сердце ❤️",
+            "Моя красавица 😍",
+            "Мне тебя не хватает",
+            "Целую 💋",
+            "Обожаю тебя 🥰",
+            "Ты моё чудо ✨",
+        ];
+
+        const loveButton = document.getElementById("loveButton");
+
+        loveButton.addEventListener("click", () => {
+            // Сколько слов вылетает
+            const count = 1;
+
+            for (let i = 0; i < count; i++) {
+                createWord();
+            }
+        });
+
+        function createWord() {
+            const word = document.createElement("div");
+
+            // Случайное слово
+            word.innerText = words[Math.floor(Math.random() * words.length)];
+
+            word.style.position = "fixed";
+            word.style.left = "50%";
+            word.style.bottom = "80px";
+
+            word.style.color = "#5B1A2B";
+            word.style.fontSize = `${14 + Math.random() * 10}px`;
+            word.style.fontWeight = "bold";
+            word.style.pointerEvents = "none";
+            word.style.zIndex = "20";
+
+            document.body.appendChild(word);
+
+            // Случайное направление
+            const x = (Math.random() - 0.5) * 300;
+            const y = -(200 + Math.random() * 300);
+            const rotation = (Math.random() - 0.5) * 60;
+
+            word.animate([
+                {
+                    transform: "translate(-50%, 0) scale(0.5) rotate(0deg)",
+                    opacity: 0
+                },
+                {
+                    transform: "translate(-50%, -50px) scale(1)",
+                    opacity: 1,
+                    offset: 0.15
+                },
+                {
+                    transform: `translate(calc(-50% + ${x}px), ${y}px) scale(1) rotate(${rotation}deg)`,
+                    opacity: 0
+                }
+            ], {
+                duration: 1800 + Math.random() * 1000,
+                easing: "ease-out"
+            }).onfinish = () => {
+                word.remove();
+            };
+        }
+    </script>
+</body>
+</html>
